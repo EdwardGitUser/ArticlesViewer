@@ -30,9 +30,9 @@ export function getSuffix(day: number): string {
 
 export function formatDate(dateString: string): string {
     const date = new Date(dateString);
-    const day = date.getDate();
-    const month = date.toLocaleString('en-US', { month: 'short' });
-    const year = date.getFullYear();
+    const day: number = date.getDate();
+    const month: string = date.toLocaleString('en-US', { month: 'short' });
+    const year: number = date.getFullYear();
     return `${month} ${day}${getSuffix(day)}, ${year}`;
 }
 

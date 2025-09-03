@@ -3,7 +3,8 @@ import {
     Component,
     DestroyRef,
     inject,
-    output, OnInit,
+    output,
+    OnInit,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -32,7 +33,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 export class ArticlesFilterComponent implements OnInit {
     readonly searchChange = output<string>();
 
-    readonly searchControl = new FormControl('');
+    readonly searchControl = new FormControl<string>('', { nonNullable: true });
 
     private readonly destroyRef = inject(DestroyRef);
 
@@ -43,8 +44,8 @@ export class ArticlesFilterComponent implements OnInit {
     private setupSearchSubscription() {
         this.searchControl.valueChanges
             .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe((value) => {
-                this.searchChange.emit(value || '');
+            .subscribe((value: string) => {
+                this.searchChange.emit(value);
             });
     }
 }
