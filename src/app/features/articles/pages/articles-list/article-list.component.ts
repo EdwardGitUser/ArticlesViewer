@@ -25,11 +25,11 @@ export function splitKeywords(
         .filter((k) => !!k);
 }
 
-export function countOccurrences(haystack: string, needle: string): number {
-    if (!haystack || !needle) return 0;
-    const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(escaped, 'gi');
-    return (haystack.match(regex) || []).length;
+export function countOccurrencesInText(text: string, keyword: string): number {
+    if (!text || !keyword) return 0;
+    const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const pattern = new RegExp(escapedKeyword, 'gi');
+    return (text.match(pattern) || []).length;
 }
 
 @Component({
@@ -43,7 +43,6 @@ export function countOccurrences(haystack: string, needle: string): number {
 export class ArticleListComponent {
     private readonly articleService = inject(ArticleService);
     private readonly router = inject(Router);
-    private readonly searchEffect: EffectRef;
 
     highlightKeywords = computed(() => splitKeywords(this.searchTerm()));
 
@@ -56,12 +55,12 @@ export class ArticleListComponent {
 
         const withScores = articles.map((a) => {
             const title = a.title.toLowerCase();
-            const summary = (a.summary || '').toLowerCase();
+            const summary = a.summary.toLowerCase();
             let titleOccurrences = 0;
             let summaryOccurrences = 0;
-            for (const term of lowercasedKeywords) {
-                titleOccurrences += countOccurrences(title, term);
-                summaryOccurrences += countOccurrences(summary, term);
+            for (const keyword of lowercasedKeywords) {
+                titleOccurrences += countOccurrencesInText(title, keyword);
+                summaryOccurrences += countOccurrencesInText(summary, keyword);
             }
             return { a, titleOccurrences, summaryOccurrences };
         });
@@ -97,7 +96,7 @@ export class ArticleListComponent {
     );
 
     constructor() {
-        this.searchEffect = effect(() => {
+        effect(() => {
             const currentSearchInput: string = this.searchTerm();
             this.loadArticles(currentSearchInput);
         });
@@ -135,9 +134,8 @@ export class ArticleListComponent {
                     this.articles.set(response.results);
                 },
                 error: (err) => {
-                    console.error('Failed to load articles', err);
                     this.error.set(
-                        'Could not fetch articles. Please try again later.'
+                        'Could not load articles. Please try again later.'
                     );
                     this.articles.set([]);
                 },
