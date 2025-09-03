@@ -107,7 +107,12 @@ export class ArticleListComponent {
     }
 
     onCardClick(articleId: number) {
-        this.router.navigate(['/articles', articleId]);
+        const article: GetArticleRequest | undefined = this.articles().find(
+            (a) => a.id === articleId
+        );
+        this.router.navigate(['/articles', articleId], {
+            state: article ? { article } : undefined,
+        });
     }
 
     retryLoad() {
