@@ -131,17 +131,17 @@ export class ArticleListComponent implements OnInit {
         this.searchSubject
             .pipe(
                 startWith(''),
+                tap(() => {
+                    this.isLoading.set(true);
+                    this.error.set(null);
+                }),
                 debounceTime(300),
                 map((value: string) => splitKeywords(value)),
                 distinctUntilChanged(
                     (a: string[], b: string[]) => a.join(' ') === b.join(' ')
                 ),
-                tap((keywords: string[]) => {
-                    this.keywords.set(keywords);
-                    this.isLoading.set(true);
-                    this.error.set(null);
-                }),
                 switchMap((keywords: string[]) => {
+                    this.keywords.set(keywords);
                     const params = keywords.length
                         ? { search: keywords.join(',') }
                         : undefined;
