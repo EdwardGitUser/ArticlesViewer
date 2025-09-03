@@ -2,10 +2,8 @@ import {
     ChangeDetectionStrategy,
     Component,
     DestroyRef,
-    effect,
     inject,
-    input,
-    output,
+    output, OnInit,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -31,7 +29,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
     styleUrl: './articles-filter.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ArticlesFilterComponent {
+export class ArticlesFilterComponent implements OnInit {
     readonly searchChange = output<string>();
 
     readonly searchControl = new FormControl('');

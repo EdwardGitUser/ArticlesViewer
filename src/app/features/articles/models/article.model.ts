@@ -20,5 +20,5 @@ export interface GetArticleRequest {
     updated_at: string;
     featured: boolean;
     launches: Launch[];
-    events: any[];
+    events: unknown[];
 }
