@@ -1,0 +1,37 @@
+<article class="article" aria-label="Article Page">
+    <header class="article__hero" role="img" [attr.aria-label]="article.title">
+        @if (!imageError() && article.image_url) {
+        <img
+            class="article__hero-img"
+            [src]="article.image_url"
+            [alt]="article.title"
+            (error)="onImageError()"
+        />
+        } @else {
+        <div
+            class="article__hero-fallback"
+            aria-label="No image available"
+        ></div>
+        }
+    </header>
+
+    <section class="article__container" aria-labelledby="article-title">
+        <div class="article__card">
+            <h1 id="article-title" class="article__title">
+                {{ article.title }}
+            </h1>
+            <div class="article__body">
+                <p>{{ article.summary }}</p>
+            </div>
+        </div>
+
+        <a
+            class="article__back"
+            routerLink="/articles"
+            aria-label="Back to homepage"
+        >
+            <mat-icon class="article__back-icon">arrow_back</mat-icon>
+            <span class="article__back-text">Back to homepage</span>
+        </a>
+    </section>
+</article>

@@ -1,3 +1,3 @@
 export const environment = {
-  apiUrl: 'https://newsapi.org/v2/top-headlines',
+    apiUrl: 'https://api.spaceflightnewsapi.net/v4/',
 };

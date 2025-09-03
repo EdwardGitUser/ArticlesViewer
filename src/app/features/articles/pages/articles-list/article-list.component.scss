@@ -1,0 +1,23 @@
+.articles {
+    padding: 4rem 7rem;
+
+    &__search {
+        max-width: 500px;
+        margin-bottom: 1.5rem;
+    }
+
+    &__info {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #2d3748;
+        border-bottom: 1px solid #e2e8f0;
+        margin-bottom: 3rem;
+    }
+
+    &__list {
+        display: grid;
+        gap: 3rem;
+
+        grid-template-columns: repeat(auto-fill, minmax(370px, 1fr));
+    }
+}

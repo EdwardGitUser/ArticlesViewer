@@ -1,0 +1,51 @@
+<mat-card class="article-card" (click)="onCardClick()">
+    <div class="article-card__image-container">
+        @if (!imageError() && article().image_url) {
+        <img
+            mat-card-image
+            class="article-card__image"
+            [src]="article().image_url"
+            [alt]="article().title"
+            (error)="onImageError()"
+        />
+        } @else {
+        <div class="article-card__image-fallback">
+            <mat-icon class="article-card__fallback-icon">image</mat-icon>
+            <span class="article-card__fallback-text">No Image</span>
+        </div>
+        }
+    </div>
+
+    <mat-card-header class="article-card__header">
+        <mat-card-subtitle class="article-card__subtitle">
+            <div class="article-card__meta">
+                <mat-icon class="article-card__date-icon"
+                    >calendar_today</mat-icon
+                >
+                <span class="article-card__date">{{
+                    formatDate(article().published_at)
+                }}</span>
+            </div>
+        </mat-card-subtitle>
+        <mat-card-title
+            class="article-card__title"
+            [innerHTML]="article().title | highlight : highlightKeywords()"
+        ></mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content class="article-card__content">
+        <p
+            class="article-card__summary"
+            [innerHTML]="article().summary | highlight : highlightKeywords()"
+        ></p>
+    </mat-card-content>
+
+    <mat-card-actions class="article-card__actions">
+        <button mat-button class="article-card__read-more">
+            Read More
+            <mat-icon class="article-card__arrow" iconPositionEnd
+                >arrow_forward</mat-icon
+            >
+        </button>
+    </mat-card-actions>
+</mat-card>

@@ -1,0 +1,56 @@
+<main class="articles" role="main">
+    <section class="articles__search" aria-labelledby="search-heading">
+        <app-articles-filter
+            (searchChange)="onSearch($event)"
+        ></app-articles-filter>
+    </section>
+
+    <section class="articles__results" aria-live="polite" aria-atomic="true">
+        <p class="articles__info" id="results-count">
+            Results: @if (isLoading()) {
+            <span class="articles__loading">...</span>
+            } @else {
+            {{ resultsCount() }}
+            }
+        </p>
+    </section>
+
+    @if (!isLoading() && !error()) {
+    <ul
+        class="articles__list"
+        aria-describedby="results-count"
+        aria-label="Articles"
+    >
+        @for (article of rankedArticles(); track article.id) {
+        <li>
+            <app-article-card
+                [article]="article"
+                [highlightKeywords]="highlightKeywords()"
+                (cardClick)="onCardClick($event)"
+            >
+            </app-article-card>
+        </li>
+        } @empty {
+        <li>
+            <p>No articles found.</p>
+        </li>
+        }
+    </ul>
+    } @if (isLoading()) {
+    <section role="status" aria-live="polite">
+        <p class="articles__loading">Loading articles…</p>
+    </section>
+    } @if (error()) {
+    <section role="alert" aria-atomic="true">
+        <p class="articles__error">{{ error() }}</p>
+        <button
+            type="button"
+            class="articles__retry"
+            (click)="retryLoad()"
+            aria-label="Retry loading articles"
+        >
+            Try again
+        </button>
+    </section>
+    }
+</main>

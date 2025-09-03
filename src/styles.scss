@@ -1,3 +1,25 @@
+@use "@angular/material" as mat;
+
+@include mat.core();
+
+$my-theme: mat.define-theme(
+    (
+        color: (
+            theme-type: light,
+            primary: mat.$blue-palette,
+        ),
+        typography: (
+            brand-family: '"Montserrat", "Helvetica Neue", Arial, sans-serif',
+            plain-family: '"Montserrat", "Helvetica Neue", Arial, sans-serif',
+        ),
+    )
+);
+
+:root {
+    @include mat.all-component-themes($my-theme);
+}
+
+//reset styles
 * {
     margin: 0;
     padding: 0;
@@ -10,5 +32,19 @@ body {
 }
 body {
     margin: 0;
-    font-family: Roboto, "Helvetica Neue", sans-serif;
+    font-family: "Montserrat", "Helvetica Neue", Arial, sans-serif;
+    background-color: #fafafa;
+}
+
+ul,
+ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+img {
+    display: block;
+    max-width: 100%;
+    height: auto;
 }
