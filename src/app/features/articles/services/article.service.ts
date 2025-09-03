@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
-import { Observable } from 'rxjs';
+import { delay, Observable } from 'rxjs';
 import { GetArticleRequest } from '../models/article.model';
 import { PaginatedResponse } from '../../../shared/models/paginated-reponse.model';
 
@@ -23,10 +23,12 @@ export class ArticleService {
             httpParams = httpParams.set('search', params.search);
         }
 
-        return this.http.get<PaginatedResponse<GetArticleRequest>>(
-            `${this.baseUrl}articles/`,
-            { params: httpParams }
-        );
+        return this.http
+            .get<PaginatedResponse<GetArticleRequest>>(
+                `${this.baseUrl}articles/`,
+                { params: httpParams }
+            )
+            .pipe(delay(1000));
     }
 
     getArticleById(id: number): Observable<GetArticleRequest> {

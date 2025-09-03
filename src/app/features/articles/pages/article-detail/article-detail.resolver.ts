@@ -18,10 +18,16 @@ export const articleDetailResolver: ResolveFn<GetArticleRequest> = (
         return of(articleFromState);
     }
 
-    const idParam: string = route.paramMap.get('id') || '0';
+    const idParam = route.paramMap.get('id');
+
+    if (idParam === null) {
+        router.navigate(['/articles']);
+        return EMPTY;
+    }
+
     const id = Number(idParam);
 
-    if (!Number.isFinite(id) || id <= 0) {
+    if (!Number.isInteger(id) || id <= 0) {
         router.navigate(['/articles']);
         return EMPTY;
     }

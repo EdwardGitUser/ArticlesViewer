@@ -10,7 +10,7 @@
             Results: @if (isLoading()) {
             <span class="articles__loading">...</span>
             } @else {
-            {{ resultsCount() }}
+            {{ articles().length }}
             }
         </p>
     </section>
@@ -21,7 +21,8 @@
         aria-describedby="results-count"
         aria-label="Articles"
     >
-        @for (article of rankedArticles(); track article.id) {
+        @for (article of (articles() | rankByKeywords: keywords()); track
+        article.id) {
         <li>
             <app-article-card
                 [article]="article"
@@ -46,7 +47,7 @@
         <button
             type="button"
             class="articles__retry"
-            (click)="retryLoad()"
+            (click)="onRetryLoad()"
             aria-label="Retry loading articles"
         >
             Try again
