@@ -2,16 +2,28 @@ import {
     Component,
     signal,
     computed,
-    effect,
     inject,
     ChangeDetectionStrategy,
-    EffectRef,
+    OnInit,
+    DestroyRef,
+    untracked,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { debounceTime, distinctUntilChanged, Subject, map } from 'rxjs';
+import {
+    debounceTime,
+    distinctUntilChanged,
+    Subject,
+    map,
+    startWith,
+    switchMap,
+    tap,
+    catchError,
+    finalize,
+    of,
+} from 'rxjs';
 import { ArticlesFilterComponent } from './components/articles-filter/articles-filter.component';
 import { ArticleCardComponent } from './components/article-card/article-card.component';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ArticleService } from '../../services/article.service';
 import { GetArticleRequest } from '../../models/article.model';
 import { Router } from '@angular/router';
@@ -19,17 +31,20 @@ import { Router } from '@angular/router';
 export function splitKeywords(
     searchInput: string | null | undefined
 ): string[] {
-    return (searchInput || '')
+    return (searchInput ?? '')
         .split(/[\s,]+/)
-        .map((k) => k.trim())
-        .filter((k) => !!k);
+        .map((k: string) => k.trim())
+        .filter((k: string) => !!k);
 }
 
-export function countOccurrencesInText(text: string, keyword: string): number {
+export function countMatchesInText(text: string, keyword: string): number {
     if (!text || !keyword) return 0;
-    const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const pattern = new RegExp(escapedKeyword, 'gi');
-    return (text.match(pattern) || []).length;
+    const regexSafeKeyword: string = keyword.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        '\\$&'
+    );
+    const keywordMatcher = new RegExp(regexSafeKeyword, 'gi');
+    return (text.match(keywordMatcher) || []).length;
 }
 
 @Component({
@@ -40,42 +55,47 @@ export function countOccurrencesInText(text: string, keyword: string): number {
     styleUrl: './article-list.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ArticleListComponent {
+export class ArticleListComponent implements OnInit {
     private readonly articleService = inject(ArticleService);
     private readonly router = inject(Router);
+    private readonly destroyRef = inject(DestroyRef);
 
-    highlightKeywords = computed(() => splitKeywords(this.searchTerm()));
+    keywords = signal<string[]>([]);
 
     rankedArticles = computed(() => {
         const articles: GetArticleRequest[] = this.articles();
-        const lowercasedKeywords: string[] = this.highlightKeywords().map(
-            (keyword: string) => keyword.toLowerCase()
+
+        const lowercasedKeywords: string[] = untracked(() =>
+            this.keywords().map((k: string) => k.toLowerCase())
         );
+
         if (lowercasedKeywords.length === 0) return articles;
 
-        const withScores = articles.map((a) => {
-            const title = a.title.toLowerCase();
-            const summary = a.summary.toLowerCase();
-            let titleOccurrences = 0;
-            let summaryOccurrences = 0;
-            for (const keyword of lowercasedKeywords) {
-                titleOccurrences += countOccurrencesInText(title, keyword);
-                summaryOccurrences += countOccurrencesInText(summary, keyword);
-            }
-            return { a, titleOccurrences, summaryOccurrences };
-        });
+        const matchedKeywordsResults = articles.map(
+            (article: GetArticleRequest) => {
+                const title: string = article.title.toLowerCase();
+                const summary: string = article.summary.toLowerCase();
 
-        withScores.sort((x, y) => {
-            if (y.titleOccurrences !== x.titleOccurrences) {
-                return y.titleOccurrences - x.titleOccurrences;
-            }
-            if (y.summaryOccurrences !== x.summaryOccurrences) {
-                return y.summaryOccurrences - x.summaryOccurrences;
-            }
-            return 0;
-        });
+                let titleMatchesCounter = 0;
+                let summaryMatchesCounter = 0;
 
-        return withScores.map((w) => w.a);
+                for (const keyword of lowercasedKeywords) {
+                    titleMatchesCounter += countMatchesInText(title, keyword);
+                    summaryMatchesCounter += countMatchesInText(
+                        summary,
+                        keyword
+                    );
+                }
+                return { article, titleMatchesCounter, summaryMatchesCounter };
+            }
+        );
+        return matchedKeywordsResults
+            .sort(
+                (x, y) =>
+                    y.titleMatchesCounter - x.titleMatchesCounter ||
+                    y.summaryMatchesCounter - x.summaryMatchesCounter
+            )
+            .map((result) => result.article);
     });
 
     isLoading = signal(false);
@@ -86,20 +106,8 @@ export class ArticleListComponent {
 
     private searchSubject = new Subject<string>();
 
-    private searchTerm = toSignal(
-        this.searchSubject.pipe(
-            debounceTime(300),
-            map((value: string) => splitKeywords(value || '').join(' ')),
-            distinctUntilChanged()
-        ),
-        { initialValue: '' }
-    );
-
-    constructor() {
-        effect(() => {
-            const currentSearchInput: string = this.searchTerm();
-            this.loadArticles(currentSearchInput);
-        });
+    ngOnInit(): void {
+        this.initSearchSubscription();
     }
 
     onSearch(searchValue: string) {
@@ -116,37 +124,41 @@ export class ArticleListComponent {
     }
 
     retryLoad() {
-        this.loadArticles();
+        this.searchSubject.next(this.keywords().join(' '));
     }
 
-    private loadArticles(searchInput?: string) {
-        this.isLoading.set(true);
-        this.error.set(null);
-
-        const keywords: string[] = splitKeywords(searchInput || '');
-        const commaSeparatedKeywords: string = keywords.join(',');
-
-        this.articleService
-            .getArticles(
-                keywords.length
-                    ? {
-                          search: commaSeparatedKeywords,
-                      }
-                    : undefined
-            )
-            .subscribe({
-                next: (response) => {
-                    this.articles.set(response.results);
-                },
-                error: (err) => {
-                    this.error.set(
-                        'Could not load articles. Please try again later.'
+    private initSearchSubscription(): void {
+        this.searchSubject
+            .pipe(
+                startWith(''),
+                debounceTime(300),
+                map((value: string) => splitKeywords(value)),
+                distinctUntilChanged(
+                    (a: string[], b: string[]) => a.join(' ') === b.join(' ')
+                ),
+                tap((keywords: string[]) => {
+                    this.keywords.set(keywords);
+                    this.isLoading.set(true);
+                    this.error.set(null);
+                }),
+                switchMap((keywords: string[]) => {
+                    const params = keywords.length
+                        ? { search: keywords.join(',') }
+                        : undefined;
+                    return this.articleService.getArticles(params).pipe(
+                        catchError(() => {
+                            this.error.set(
+                                'Could not load articles. Please try again later.'
+                            );
+                            return of({ results: [] });
+                        }),
+                        finalize(() => this.isLoading.set(false))
                     );
-                    this.articles.set([]);
-                },
-                complete: () => {
-                    this.isLoading.set(false);
-                },
+                }),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe((response) => {
+                this.articles.set(response.results);
             });
     }
 }
