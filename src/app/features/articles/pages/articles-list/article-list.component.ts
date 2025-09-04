@@ -1,39 +1,42 @@
 import {
-    Component,
-    signal,
-    inject,
     ChangeDetectionStrategy,
-    computed,
+    Component,
     Signal,
+    computed,
+    inject,
+    signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
 import {
+    catchError,
     debounceTime,
     distinctUntilChanged,
-    Subject,
+    finalize,
     map,
+    of,
     startWith,
     switchMap,
     tap,
-    catchError,
-    finalize,
-    of,
 } from 'rxjs';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { ArticlesFilterComponent } from './components/articles-filter/articles-filter.component';
 import { ArticleCardComponent } from './components/article-card/article-card.component';
-import { RankByKeywordsPipe } from '../../../../shared/pipes/rank-by-keywords.pipe';
 import { ArticleService } from '../../services/article.service';
 import { GetArticleRequest } from '../../models/article.model';
-import { Router } from '@angular/router';
+import { RankByKeywordsPipe } from '../../../../shared/pipes/rank-by-keywords.pipe';
 
 export function splitKeywords(
     searchInput: string | null | undefined
 ): string[] {
     return (searchInput ?? '')
         .split(/[\s,]+/)
-        .map((k: string) => k.trim())
-        .filter((k: string) => !!k);
+        .map((keyword: string) => keyword.trim())
+        .filter((keyword: string) => !!keyword);
 }
 
 @Component({
@@ -41,7 +44,12 @@ export function splitKeywords(
     standalone: true,
     imports: [
         CommonModule,
-        ArticlesFilterComponent,
+        FormsModule,
+        ReactiveFormsModule,
+        MatButtonModule,
+        MatFormFieldModule,
+        MatIconModule,
+        MatInputModule,
         ArticleCardComponent,
         RankByKeywordsPipe,
     ],
@@ -53,21 +61,22 @@ export class ArticleListComponent {
     private readonly articleService = inject(ArticleService);
     private readonly router = inject(Router);
 
-    keywords = signal<string[]>([]);
+    readonly searchControl = new FormControl<string>('', { nonNullable: true });
 
-    isLoading = signal(true);
-    error = signal<string | null>(null);
-    resultsCount = computed(() => this.articles().length);
+    readonly keywords = signal<string[]>([]);
+    readonly isLoading = signal<boolean>(true);
+    readonly error = signal<string | null>(null);
 
-    private readonly searchSubject = new Subject<string>();
+    readonly resultsCount = computed(() => this.articles().length);
 
-    articles: Signal<GetArticleRequest[]> = toSignal(
-        this.searchSubject.pipe(
+    readonly articles: Signal<GetArticleRequest[]> = toSignal(
+        this.searchControl.valueChanges.pipe(
             startWith(''),
             debounceTime(300),
             map((value: string) => splitKeywords(value)),
             distinctUntilChanged(
-                (a: string[], b: string[]) => a.join(' ') === b.join(' ')
+                (previousKeywords: string[], currentKeywords: string[]) =>
+                    previousKeywords.join(' ') === currentKeywords.join(' ')
             ),
             tap((keywords: string[]) => {
                 this.isLoading.set(true);
@@ -75,10 +84,11 @@ export class ArticleListComponent {
                 this.keywords.set(keywords);
             }),
             switchMap((keywords: string[]) => {
-                const params = keywords.length
+                const searchParams = keywords.length
                     ? { search: keywords.join(',') }
                     : undefined;
-                return this.articleService.getArticles(params).pipe(
+
+                return this.articleService.getArticles(searchParams).pipe(
                     map((response) => response.results),
                     catchError(() => {
                         this.error.set(
@@ -93,15 +103,12 @@ export class ArticleListComponent {
         { initialValue: [] }
     );
 
-    onSearch(searchValue: string) {
-        this.searchSubject.next(searchValue);
-    }
-
-    onCardClick(articleId: number) {
+    onCardClick(articleId: number): void {
         this.router.navigate(['/articles', articleId]);
     }
 
-    onRetryLoad() {
-        this.searchSubject.next(this.keywords().join(' '));
+    onRetryLoad(): void {
+        const currentKeywords = this.keywords().join(' ');
+        this.searchControl.setValue(currentKeywords);
     }
 }

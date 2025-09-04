@@ -1,8 +1,18 @@
 <main class="articles" role="main">
     <section class="articles__search" aria-labelledby="search-heading">
-        <app-articles-filter
-            (searchChange)="onSearch($event)"
-        ></app-articles-filter>
+        <div class="filter">
+            <p class="filter__title" id="search-heading">Filter by keywords</p>
+            <mat-form-field appearance="outline" class="filter__input-field">
+                <mat-icon matPrefix>search</mat-icon>
+                <input
+                    matInput
+                    [formControl]="searchControl"
+                    placeholder="The most successful IT companies in..."
+                    aria-describedby="search-heading"
+                    aria-label="Search articles by keywords"
+                />
+            </mat-form-field>
+        </div>
     </section>
 
     <section class="articles__results" aria-live="polite" aria-atomic="true">
