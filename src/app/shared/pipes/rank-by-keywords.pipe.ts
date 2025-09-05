@@ -15,14 +15,15 @@ export class RankByKeywordsPipe implements PipeTransform {
         articles: GetArticleRequest[],
         keywords: string[]
     ): GetArticleRequest[] {
-        const list = articles ?? [];
-        const lowercasedKeywords = (keywords ?? []).map((k) => k.toLowerCase());
+        const lowercasedKeywords: string[] = keywords.map((k) =>
+            k.toLowerCase()
+        );
 
         if (lowercasedKeywords.length === 0) {
-            return list;
+            return articles;
         }
 
-        return list
+        return articles
             .map((article) => {
                 const title = article.title.toLowerCase();
                 const summary = article.summary.toLowerCase();

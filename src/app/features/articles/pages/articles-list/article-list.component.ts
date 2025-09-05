@@ -76,7 +76,8 @@ export class ArticleListComponent {
             map((value: string) => splitKeywords(value)),
             distinctUntilChanged(
                 (previousKeywords: string[], currentKeywords: string[]) =>
-                    previousKeywords.join(' ') === currentKeywords.join(' ')
+                    previousKeywords.join(' ').toLowerCase() ===
+                    currentKeywords.join(' ').toLowerCase()
             ),
             tap((keywords: string[]) => {
                 this.isLoading.set(true);
