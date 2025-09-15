@@ -11,30 +11,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { GetArticleRequest } from '../../../../models/article.model';
 import { HighlightPipe } from '../../../../../../shared/pipes/highlight.pipe';
-
-export function getSuffix(day: number): string {
-    if (day >= 11 && day <= 13) {
-        return 'th';
-    }
-    switch (day % 10) {
-        case 1:
-            return 'st';
-        case 2:
-            return 'nd';
-        case 3:
-            return 'rd';
-        default:
-            return 'th';
-    }
-}
-
-export function formatDate(dateString: string): string {
-    const date = new Date(dateString);
-    const day: number = date.getDate();
-    const month: string = date.toLocaleString('en-US', { month: 'short' });
-    const year: number = date.getFullYear();
-    return `${month} ${day}${getSuffix(day)}, ${year}`;
-}
+import { FormatDatePipe } from '../../../../../../shared/pipes/format-date.pipe';
 
 @Component({
     selector: 'app-article-card',
@@ -45,6 +22,7 @@ export function formatDate(dateString: string): string {
         MatButtonModule,
         MatIconModule,
         HighlightPipe,
+        FormatDatePipe,
     ],
     templateUrl: './article-card.component.html',
     styleUrl: './article-card.component.scss',
@@ -64,6 +42,4 @@ export class ArticleCardComponent {
     onCardClick(): void {
         this.cardClick.emit(this.article().id);
     }
-
-    formatDate = formatDate;
 }

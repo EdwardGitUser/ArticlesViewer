@@ -23,7 +23,7 @@
                     >calendar_today</mat-icon
                 >
                 <span class="article-card__date">{{
-                    formatDate(article().published_at)
+                    article().published_at | formatDate
                 }}</span>
             </div>
         </mat-card-subtitle>
